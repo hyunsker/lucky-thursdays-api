@@ -587,7 +587,7 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
     background: 'linear-gradient(180deg, rgba(15,15,15,0.5) 0%, rgba(15,15,15,0.88) 40%, rgba(15,15,15,0.95) 100%)',
   };
 
-  const detailUnlockLabel = adBusy?.kind === 'detail' ? '잠시만요…' : '광고 보고 상세 운세 확인';
+  const detailUnlockLabel = adBusy?.kind === 'detail' ? '광고 준비 중입니다!' : '광고 보고 상세 운세 확인';
 
   return (
     <div style={shell} className="app-result-scroll">

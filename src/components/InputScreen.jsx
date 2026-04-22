@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LOGO_DARK_URL } from '../constants/branding.js';
 import { tossPadding, tossViewportShell } from '../constants/tossLayout.js';
 
@@ -204,6 +204,81 @@ const btn = {
   letterSpacing: '-0.01em',
 };
 
+const adOverlayRoot = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 240,
+  background: 'rgba(15, 15, 15, 0.9)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 24,
+  boxSizing: 'border-box',
+};
+
+const adOverlayCard = {
+  width: '100%',
+  maxWidth: 340,
+  background: CARD,
+  border: `0.5px solid ${BORDER}`,
+  borderRadius: 16,
+  padding: '28px 22px',
+  textAlign: 'center',
+};
+
+const adOverlayTitle = {
+  margin: 0,
+  color: MAIN,
+  fontSize: 16,
+  fontWeight: 700,
+  lineHeight: 1.55,
+};
+
+const adOverlaySub = {
+  margin: '10px 0 0',
+  color: SUB,
+  fontSize: 13,
+  lineHeight: 1.5,
+};
+
+const adProgressTrack = {
+  width: '100%',
+  height: 8,
+  marginTop: 18,
+  background: '#141414',
+  border: `0.5px solid ${BORDER}`,
+  borderRadius: 999,
+  overflow: 'hidden',
+};
+
+const retryHintCard = {
+  marginTop: 12,
+  background: '#141414',
+  border: `0.5px solid ${BORDER}`,
+  borderRadius: 14,
+  padding: '14px 12px',
+};
+
+const retryHintText = {
+  margin: 0,
+  color: SUB,
+  fontSize: 13,
+  lineHeight: 1.55,
+};
+
+const retryBtn = {
+  marginTop: 10,
+  width: '100%',
+  minHeight: 40,
+  borderRadius: 12,
+  border: `0.5px solid ${GOLD}`,
+  background: '#1a1a1a',
+  color: GOLD,
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
 const BIRTH_WRAP = {
   year: birthWrapYear,
   month: birthWrapMonth,
@@ -238,10 +313,27 @@ export default function InputScreen({
   onBirthChange,
   onHourChange,
   onSubmit,
+  onRetry,
   submitBusy = false,
   submitLabel = '행운번호 뽑기',
+  submitError = '',
 }) {
   const [focusKey, setFocusKey] = useState(null);
+  const [adProgress, setAdProgress] = useState(12);
+
+  useEffect(() => {
+    if (!submitBusy) {
+      setAdProgress(12);
+      return undefined;
+    }
+    const timer = setInterval(() => {
+      setAdProgress((prev) => {
+        const next = prev + 7;
+        return next >= 96 ? 22 : next;
+      });
+    }, 280);
+    return () => clearInterval(timer);
+  }, [submitBusy]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -257,6 +349,25 @@ export default function InputScreen({
 
   return (
     <div style={shell}>
+      {submitBusy && (
+        <div style={adOverlayRoot} role="dialog" aria-live="polite" aria-label="광고 준비 안내">
+          <div style={adOverlayCard}>
+            <p style={adOverlayTitle}>광고 시청 후 결과를 보여드릴게요!</p>
+            <p style={adOverlaySub}>광고를 불러오는 중이에요. 잠시만 기다려 주세요.</p>
+            <div style={adProgressTrack}>
+              <div
+                style={{
+                  width: `${adProgress}%`,
+                  height: '100%',
+                  background: `linear-gradient(90deg, ${GOLD}, #e8cc7f)`,
+                  borderRadius: 999,
+                  transition: 'width 240ms ease',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       <div style={logoWrap}>
         <img
           src={LOGO_DARK_URL}
@@ -352,6 +463,14 @@ export default function InputScreen({
           <button type="submit" style={btn} disabled={submitBusy}>
             {submitLabel}
           </button>
+          {submitError ? (
+            <div style={retryHintCard} role="status" aria-live="polite">
+              <p style={retryHintText}>{submitError}</p>
+              <button type="button" style={retryBtn} onClick={() => (onRetry || onSubmit)()}>
+                다시 시도하기
+              </button>
+            </div>
+          ) : null}
         </form>
       </div>
     </div>

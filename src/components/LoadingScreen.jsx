@@ -118,10 +118,11 @@ function usePrefersReducedMotion() {
   return reduced;
 }
 
-function useFakeProgress(enabled, done) {
+function useFakeProgress(enabled, done, initialPct = 1) {
   const [pct, setPct] = useState(1);
   useEffect(() => {
     if (!enabled) return undefined;
+    setPct(Math.max(1, Math.min(99, Number(initialPct) || 1)));
     if (done) {
       const id = window.setInterval(() => {
         setPct((prev) => {
@@ -148,7 +149,7 @@ function useFakeProgress(enabled, done) {
       setPct(Math.min(99, Math.max(1, Math.floor(eased))));
     }, 100);
     return () => window.clearInterval(id);
-  }, [enabled, done]);
+  }, [enabled, done, initialPct]);
   return pct;
 }
 
@@ -198,9 +199,9 @@ function LogoCompleting({ pct, reducedMotion }) {
   );
 }
 
-export default function LoadingScreen({ done = false }) {
+export default function LoadingScreen({ done = false, initialPct = 1 }) {
   const reducedMotion = usePrefersReducedMotion();
-  const pct = useFakeProgress(!reducedMotion, done);
+  const pct = useFakeProgress(!reducedMotion, done, initialPct);
   const displayPct = reducedMotion ? null : pct;
 
   return (
