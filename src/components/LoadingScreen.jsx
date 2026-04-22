@@ -122,35 +122,45 @@ function useFakeProgress(enabled, done, initialPct = 1) {
   const [pct, setPct] = useState(1);
   useEffect(() => {
     if (!enabled) return undefined;
-    setPct(Math.max(1, Math.min(99, Number(initialPct) || 1)));
+    let raf = 0;
+    let mounted = true;
+    const begin = Math.max(1, Math.min(95, Number(initialPct) || 1));
+    setPct(begin);
+
+    const idleStart = performance.now();
+    const idleTick = (now) => {
+      if (!mounted) return;
+      const sec = (now - idleStart) / 1000;
+      // 대기 중에는 96% 근처까지 천천히 접근 (급상승 방지)
+      const eased = begin + (96 - begin) * (1 - Math.exp(-sec / 2.4));
+      setPct((prev) => Math.max(prev, Math.min(96, eased)));
+      raf = requestAnimationFrame(idleTick);
+    };
+
+    const finishStart = performance.now();
+    const FINISH_MS = 880;
+    const finishFrom = begin;
+    const finishTick = (now) => {
+      if (!mounted) return;
+      const t = Math.min(1, (now - finishStart) / FINISH_MS);
+      const easeOut = 1 - (1 - t) * (1 - t);
+      const v = finishFrom + (100 - finishFrom) * easeOut;
+      setPct(v);
+      if (t < 1) raf = requestAnimationFrame(finishTick);
+    };
+
     if (done) {
-      const id = window.setInterval(() => {
-        setPct((prev) => {
-          if (prev >= 100) {
-            window.clearInterval(id);
-            return 100;
-          }
-          const remain = 100 - prev;
-          const step = Math.max(2, Math.ceil(remain * 0.28));
-          return Math.min(100, prev + step);
-        });
-      }, 16);
-      return () => window.clearInterval(id);
+      raf = requestAnimationFrame(finishTick);
+    } else {
+      raf = requestAnimationFrame(idleTick);
     }
 
-    const t0 = Date.now();
-    const id = window.setInterval(() => {
-      const elapsed = (Date.now() - t0) / 1000;
-      /**
-       * 실제 응답 대기 중에도 멈춘 느낌이 없도록 99%까지 완만히 증가.
-       * 완료(done=true) 신호를 받으면 위 분기에서 빠르게 100으로 마무리한다.
-       */
-      const eased = 99 * (1 - Math.exp(-elapsed / 3.2));
-      setPct(Math.min(99, Math.max(1, Math.floor(eased))));
-    }, 100);
-    return () => window.clearInterval(id);
+    return () => {
+      mounted = false;
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, [enabled, done, initialPct]);
-  return pct;
+  return Math.floor(pct);
 }
 
 function LogoCompleting({ pct, reducedMotion }) {

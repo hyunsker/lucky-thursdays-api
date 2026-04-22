@@ -258,18 +258,20 @@ const againOverlayTitle = {
   lineHeight: 1.55,
 };
 
-const againOverlayCount = {
-  marginTop: 24,
-  fontSize: 48,
-  fontWeight: 800,
-  color: GOLD,
-  fontVariantNumeric: 'tabular-nums',
-};
-
 const againOverlaySub = {
   marginTop: 14,
   fontSize: 14,
   color: SUB,
+};
+
+const againOverlayTrack = {
+  width: '100%',
+  height: 8,
+  marginTop: 18,
+  background: '#141414',
+  border: `0.5px solid ${BORDER}`,
+  borderRadius: 999,
+  overflow: 'hidden',
 };
 
 const inlineAdWrap = {
@@ -350,6 +352,7 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
   const [adBusy, setAdBusy] = useState(null);
   const [bannerAvailable, setBannerAvailable] = useState(false);
   const [bannerRendered, setBannerRendered] = useState(false);
+  const [adProgress, setAdProgress] = useState(12);
   const bannerListRef = useRef(null);
   const bannerRetryIntervalRef = useRef(null);
   const bannerRenderedRef = useRef(false);
@@ -358,6 +361,20 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
     setDetailUnlocked(false);
     setAdBusy(null);
   }, [today, sixDigit, source, candidateIndex]);
+
+  useEffect(() => {
+    if (adBusy === null) {
+      setAdProgress(12);
+      return undefined;
+    }
+    const timer = setInterval(() => {
+      setAdProgress((prev) => {
+        const next = prev + 7;
+        return next >= 96 ? 24 : next;
+      });
+    }, 280);
+    return () => clearInterval(timer);
+  }, [adBusy]);
 
   useEffect(() => {
     setBannerRendered(false);
@@ -588,15 +605,28 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
   };
 
   const detailUnlockLabel = adBusy?.kind === 'detail' ? '광고 준비 중입니다!' : '광고 보고 상세 운세 확인';
+  const adOverlayTitleText =
+    adBusy?.kind === 'detail' ? '광고 시청 후 상세 운세를 열어드릴게요' : '광고 시청 후 다음 추천 번호를 볼 수 있어요';
+  const adOverlaySubText = adBusy?.label || '광고를 불러오는 중입니다…';
 
   return (
     <div style={shell} className="app-result-scroll">
-      {adBusy?.kind === 'next' && (
+      {adBusy !== null && (
         <div style={againOverlayRoot} role="dialog" aria-live="polite" aria-label="광고 시청 안내">
           <div style={againOverlayCard}>
-            <p style={againOverlayTitle}>광고 시청 후 다음 추천 번호를 볼 수 있어요</p>
-            <div style={againOverlayCount}>...</div>
-            <p style={againOverlaySub}>{adBusy.label}</p>
+            <p style={againOverlayTitle}>{adOverlayTitleText}</p>
+            <p style={againOverlaySub}>{adOverlaySubText}</p>
+            <div style={againOverlayTrack}>
+              <div
+                style={{
+                  width: `${adProgress}%`,
+                  height: '100%',
+                  background: `linear-gradient(90deg, ${GOLD}, #e8cc7f)`,
+                  borderRadius: 999,
+                  transition: 'width 240ms ease',
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
