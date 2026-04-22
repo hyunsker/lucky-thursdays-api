@@ -1,0 +1,145 @@
+/* 토스 인앱 웹뷰·모바일 공통 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  height: 100%;
+  height: -webkit-fill-available;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  background: #0f0f0f;
+  color-scheme: dark;
+}
+
+/* dvh: 모바일 주소창 높이 변동 대응 */
+#root {
+  min-height: 100dvh;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root > * {
+  flex: 1 0 auto;
+  width: 100%;
+  min-height: 0;
+}
+
+/* 화면 전환 래퍼 (App) */
+.app-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+.app-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  animation: app-screen-in 280ms ease-out both;
+}
+
+.app-step > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+@keyframes app-screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-step {
+    animation: none;
+  }
+}
+
+/* 결과 화면: 긴 본문 세로 스크롤 */
+.app-result-scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.app-result-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.app-result-scroll::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 4px;
+}
+
+/* 버튼 터치 피드백 */
+button {
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.98);
+  filter: brightness(0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
+  }
+
+  button:not(:disabled):active {
+    transform: none;
+    filter: none;
+  }
+}
+
+/* 터치 하이라이트·더블탭 줌 완화 */
+button,
+select,
+[role='button'] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* 가로 스크롤 방지(좁은 웹뷰) */
+body {
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+
+/* 입력 화면: 생년월일 가로 한 줄이 320px대에서 넘칠 때 세로 스택 */
+@media (max-width: 380px) {
+  .input-birth-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .input-birth-row > div {
+    flex: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+}

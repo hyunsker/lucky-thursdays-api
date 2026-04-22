@@ -1,0 +1,4 @@
+# Toss appName 과 동일 (miniapp 과 별개지만 이름 통일)
+name = "lucky-thursdays"
+main = "src/index.js"
+compatibility_date = "2026-04-10"
