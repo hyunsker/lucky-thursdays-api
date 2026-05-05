@@ -1,4 +1,14 @@
-/* 토스 인앱 웹뷰·모바일 공통 */
+:root {
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: #ece8df;
+  background: #121110;
+}
+
 *,
 *::before,
 *::after {
@@ -6,42 +16,37 @@
 }
 
 html {
-  -webkit-text-size-adjust: 100%;
-  height: 100%;
-  height: -webkit-fill-available;
+  min-height: 100%;
+  min-height: 100dvh;
+  min-height: 100svh;
+  background: #121110;
+  background: linear-gradient(165deg, #171615 0%, #131211 42%, #0e0e0d 72%, #121110 100%);
 }
 
-html,
 body,
 #root {
   margin: 0;
   min-height: 100%;
-  min-height: -webkit-fill-available;
-  background: #0f0f0f;
-  color-scheme: dark;
+  min-height: 100dvh;
+  min-height: 100svh;
+  background: inherit;
 }
 
-/* dvh: 모바일 주소창 높이 변동 대응 */
 #root {
-  min-height: 100dvh;
-  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   display: flex;
   flex-direction: column;
 }
 
-#root > * {
-  flex: 1 0 auto;
-  width: 100%;
-  min-height: 0;
-}
-
-/* 화면 전환 래퍼 (App) */
 .app-shell {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  width: 100%;
+  min-height: 100%;
+  min-height: 100dvh;
+  min-height: 100svh;
+  background: inherit;
 }
 
 .app-step {
@@ -49,97 +54,168 @@ body,
   display: flex;
   flex-direction: column;
   min-height: 0;
-  width: 100%;
-  animation: app-screen-in 280ms ease-out both;
 }
 
-.app-step > * {
-  flex: 1 1 auto;
-  min-height: 0;
-  width: 100%;
+.toss-app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
 }
 
-@keyframes app-screen-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.hud-card {
+  background: #ffffff;
+  border: 1px solid #dbe7ff;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 12px 30px rgba(0, 100, 255, 0.08);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .app-step {
-    animation: none;
-  }
+.hud-card h1 {
+  margin: 0;
+  font-size: 24px;
 }
 
-/* 결과 화면: 긴 본문 세로 스크롤 */
-.app-result-scroll {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
+.sub {
+  margin: 8px 0 0;
+  color: #52627a;
+  font-size: 14px;
 }
 
-.app-result-scroll::-webkit-scrollbar {
-  width: 4px;
+.stat-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.app-result-scroll::-webkit-scrollbar-thumb {
-  background: #3a3a3a;
-  border-radius: 4px;
+.stat-grid > div {
+  background: #f4f8ff;
+  border: 1px solid #d4e4ff;
+  border-radius: 14px;
+  padding: 10px;
 }
 
-/* 버튼 터치 피드백 */
+.label {
+  display: block;
+  font-size: 12px;
+  color: #678;
+}
+
+.stat-grid strong {
+  margin-top: 4px;
+  display: block;
+  font-size: 16px;
+  color: #0f1b2e;
+}
+
+.actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+}
+
 button {
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #0064ff;
+  color: #fff;
+  font-weight: 700;
+  flex: 1;
+}
+
+button.ghost {
+  background: #edf3ff;
+  color: #1f3e72;
+}
+
+.error {
+  margin: 10px 0 0;
+  color: #cc2a2a;
+  font-size: 13px;
+}
+
+.launch-stage {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid #cddfff;
+  min-height: 380px;
+  background: #d7e8ff;
+}
+
+.sky-track {
+  position: absolute;
+  top: -220%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transition: transform 120ms linear;
+}
+
+.layer {
+  height: 34%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.clouds {
+  color: #3e66a0;
+  background: linear-gradient(180deg, #ecf6ff 0%, #bfd9ff 100%);
+}
+
+.stratosphere {
+  color: #fff;
+  background: linear-gradient(180deg, #4f80ce 0%, #2958a6 100%);
+}
+
+.space {
+  color: #ced8ff;
+  background: linear-gradient(180deg, #12193b 0%, #060916 100%);
+}
+
+.ball {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #9ec2ff 0%, #0064ff 80%);
+  box-shadow: 0 12px 24px rgba(0, 100, 255, 0.3);
+  transition: transform 100ms linear;
+}
+
+.toss-signal {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 58px;
+  font-weight: 900;
+  color: #0064ff;
+  opacity: 0;
+  transform: scale(0.6);
   transition:
-    transform 0.12s ease,
-    filter 0.12s ease;
+    opacity 160ms ease,
+    transform 180ms ease;
 }
 
-button:not(:disabled):active {
-  transform: scale(0.98);
-  filter: brightness(0.94);
+.toss-signal.visible {
+  opacity: 1;
+  transform: scale(1);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  button {
-    transition: none;
-  }
-
-  button:not(:disabled):active {
-    transform: none;
-    filter: none;
-  }
-}
-
-/* 터치 하이라이트·더블탭 줌 완화 */
-button,
-select,
-[role='button'] {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-/* 가로 스크롤 방지(좁은 웹뷰) */
-body {
-  overflow-x: hidden;
-  overscroll-behavior-y: none;
-}
-
-/* 입력 화면: 생년월일 가로 한 줄이 320px대에서 넘칠 때 세로 스택 */
-@media (max-width: 380px) {
-  .input-birth-row {
-    flex-direction: column !important;
-    align-items: stretch !important;
-  }
-
-  .input-birth-row > div {
-    flex: none !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-  }
+.guide {
+  margin-top: auto;
+  text-align: center;
+  color: #1e3f75;
+  font-weight: 700;
+  padding: 6px 0 12px;
 }

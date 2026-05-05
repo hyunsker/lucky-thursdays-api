@@ -1,0 +1,11 @@
+이 폴더의 PNG
+- 01-input.png, 02-loading.png, 03-result.png 는 scripts/render-store-screens-fallback.py 로 만든 “톤 맞춤” 샘플입니다. 콘솔 심사용으로는 실제 앱 화면 캡처를 권장합니다.
+
+실제 UI와 동일한 스크린샷 (로컬 Mac)
+1) npm run build        ← 반드시 vite 일반 빌드 (ait build 직후라면 dist가 web/로 바뀌어 preview 404가 날 수 있음)
+2) 다른 터미널: npm run preview -- --host 127.0.0.1 --port 4173
+3) npm i -D puppeteer
+4) node scripts/capture-store-screens.mjs
+   → 같은 폴더에 PNG 덮어쓰기
+
+URL: http://127.0.0.1:4173/?shot=input | loading | result

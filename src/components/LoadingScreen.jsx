@@ -1,26 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LOGO_DARK_URL } from '../constants/branding.js';
 import { tossPadding, tossViewportShell } from '../constants/tossLayout.js';
+import { backgrounds, color, ease, fontStack, shadow } from '../constants/uiTheme.js';
 
-const BG = '#0f0f0f';
-const GOLD = '#c9a84c';
-const SUB = '#888888';
+const BG = color.bg;
+const GOLD = color.gold;
+const SUB = color.sub;
+const FINISH_MS = 920;
 
 const shell = {
-  minHeight: '100%',
   flex: 1,
-  background: BG,
+  width: '100%',
+  minHeight: '100dvh',
+  background: backgrounds.shell,
   ...tossViewportShell,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'stretch',
   justifyContent: 'center',
   ...tossPadding.loading,
-  fontFamily:
-    '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Segoe UI", Roboto, sans-serif',
+  fontFamily: fontStack,
 };
 
-/** 세로 공간을 쓰면서 중앙에 큰 로고·글자 배치 */
 const mainCol = {
   flex: 1,
   display: 'flex',
@@ -46,36 +47,39 @@ const title = {
   margin: 0,
   maxWidth: '100%',
   fontSize: 'clamp(15px, 4.6vw, 19px)',
-  fontWeight: 700,
+  fontWeight: 600,
   color: GOLD,
   textAlign: 'center',
-  lineHeight: 1.45,
-  letterSpacing: '-0.02em',
+  lineHeight: 1.52,
+  letterSpacing: '-0.018em',
   wordBreak: 'keep-all',
 };
 
 const sub = {
   margin: 0,
   fontSize: 'clamp(13px, 3.8vw, 16px)',
-  fontWeight: 500,
+  fontWeight: 400,
   color: SUB,
   textAlign: 'center',
-  lineHeight: 1.55,
+  lineHeight: 1.58,
   padding: '0 8px',
   maxWidth: '100%',
   wordBreak: 'keep-all',
+  letterSpacing: '0.02em',
 };
 
 const pctStyle = {
   margin: 0,
+  minHeight: '1.2em',
   fontSize: 'clamp(17px, 5.2vw, 24px)',
-  fontWeight: 800,
+  fontWeight: 700,
   fontVariantNumeric: 'tabular-nums',
-  letterSpacing: '0.06em',
+  letterSpacing: '0.055em',
   color: GOLD,
+  fontFeatureSettings: '"tnum"',
+  transition: `opacity 0.32s ${ease.soft}`,
 };
 
-/** 작은 폰에서도 크게: vmin+clamp (원형 마스크와 동일 값으로 맞춤) */
 const LOGO_BOX = 'clamp(118px, 36vmin, 168px)';
 const LOGO_IMG_CLIP = 'clamp(106px, 32.4vmin, 152px)';
 
@@ -87,6 +91,7 @@ const logoClipShell = {
   overflow: 'hidden',
   background: BG,
   flexShrink: 0,
+  boxShadow: shadow.logo,
 };
 
 function logoGhostStyle(opacity = 0.2) {
@@ -118,49 +123,68 @@ function usePrefersReducedMotion() {
   return reduced;
 }
 
+/**
+ * done 이 켜질 때 이전 %를 유지한 채 100%까지 — 뒤로 떨어지는 현상 방지
+ */
 function useFakeProgress(enabled, done, initialPct = 1) {
-  const [pct, setPct] = useState(1);
+  const base = Math.max(1, Math.min(95, Number(initialPct) || 1));
+  const [pct, setPct] = useState(base);
+  const pctRef = useRef(base);
+
   useEffect(() => {
     if (!enabled) return undefined;
-    let raf = 0;
+    pctRef.current = Math.max(pctRef.current, base);
     let mounted = true;
-    const begin = Math.max(1, Math.min(95, Number(initialPct) || 1));
-    setPct(begin);
+    let raf = 0;
 
-    const idleStart = performance.now();
-    const idleTick = (now) => {
-      if (!mounted) return;
-      const sec = (now - idleStart) / 1000;
-      // 대기 중에는 96% 근처까지 천천히 접근 (급상승 방지)
-      const eased = begin + (96 - begin) * (1 - Math.exp(-sec / 2.4));
-      setPct((prev) => Math.max(prev, Math.min(96, eased)));
-      raf = requestAnimationFrame(idleTick);
+    const runIdle = () => {
+      const t0 = performance.now();
+      const begin = base;
+      const step = (now) => {
+        if (!mounted) return;
+        const sec = (now - t0) / 1000;
+        const eased = begin + (96 - begin) * (1 - Math.exp(-sec / 2.4));
+        const next = Math.max(pctRef.current, Math.min(96, eased));
+        pctRef.current = next;
+        setPct(next);
+        raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
     };
 
-    const finishStart = performance.now();
-    const FINISH_MS = 880;
-    const finishFrom = begin;
-    const finishTick = (now) => {
-      if (!mounted) return;
-      const t = Math.min(1, (now - finishStart) / FINISH_MS);
-      const easeOut = 1 - (1 - t) * (1 - t);
-      const v = finishFrom + (100 - finishFrom) * easeOut;
-      setPct(v);
-      if (t < 1) raf = requestAnimationFrame(finishTick);
+    const runFinish = () => {
+      const startFrom = Math.max(pctRef.current, base);
+      pctRef.current = startFrom;
+      const t0 = performance.now();
+      const step = (now) => {
+        if (!mounted) return;
+        const t = Math.min(1, (now - t0) / FINISH_MS);
+        const easeOut = 1 - (1 - t) * (1 - t);
+        const v = startFrom + (100 - startFrom) * easeOut;
+        pctRef.current = v;
+        setPct(v);
+        if (t < 1) raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
     };
 
     if (done) {
-      raf = requestAnimationFrame(finishTick);
+      runFinish();
     } else {
-      raf = requestAnimationFrame(idleTick);
+      runIdle();
     }
 
     return () => {
       mounted = false;
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [enabled, done, initialPct]);
-  return Math.floor(pct);
+  }, [enabled, done, base]);
+
+  const sweep = Math.min(100, Math.max(0, pct));
+  return {
+    label: Math.min(100, Math.max(0, Math.floor(sweep))),
+    sweep,
+  };
 }
 
 function LogoCompleting({ pct, reducedMotion }) {
@@ -211,13 +235,14 @@ function LogoCompleting({ pct, reducedMotion }) {
 
 export default function LoadingScreen({ done = false, initialPct = 1 }) {
   const reducedMotion = usePrefersReducedMotion();
-  const pct = useFakeProgress(!reducedMotion, done, initialPct);
-  const displayPct = reducedMotion ? null : pct;
+  const progress = useFakeProgress(!reducedMotion, done, initialPct);
+  const displayPct = reducedMotion ? null : progress.label;
+  const sweepPct = reducedMotion ? 100 : progress.sweep;
 
   return (
     <div style={shell} role="status" aria-live="polite" aria-busy="true" aria-label="당신의 행운을 가져다줄 네잎클로버를 완성 중입니다. 맞춤 분석 중">
       <div style={mainCol}>
-        <LogoCompleting pct={pct} reducedMotion={reducedMotion} />
+        <LogoCompleting pct={reducedMotion ? 100 : sweepPct} reducedMotion={reducedMotion} />
 
         {displayPct !== null ? <p style={pctStyle}>{displayPct}%</p> : null}
 

@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
 import { LOGO_DARK_URL } from '../constants/branding.js';
 import { tossPadding, tossViewportShell } from '../constants/tossLayout.js';
+import { adOverlay, backgrounds, color, ease, fontStack, radius, shadow } from '../constants/uiTheme.js';
 
-const BG = '#0f0f0f';
-const CARD = '#1a1a1a';
-const BORDER = '#2a2a2a';
-const MAIN = '#f0ead6';
-const SUB = '#888888';
-const HINT = '#555555';
-const GOLD = '#c9a84c';
-const BTN_TEXT = '#0f0f0f';
+const {
+  bg: BG,
+  card: CARD,
+  border: BORDER,
+  main: MAIN,
+  sub: SUB,
+  hint: HINT,
+  gold: GOLD,
+  goldMuted: GOLD_MUTED,
+  btnText: BTN_TEXT,
+  surface: SURFACE,
+  focusRing: FOCUS_RING,
+} = color;
 
 /** value는 saju 로직과 동일 (0~11, unknown) */
 const HOUR_SELECT_OPTIONS = [
@@ -39,16 +45,17 @@ const YEARS = buildYears();
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 const shell = {
-  minHeight: '100%',
-  background: BG,
+  flex: 1,
+  width: '100%',
+  minHeight: '100dvh',
+  background: backgrounds.shell,
   ...tossViewportShell,
   ...tossPadding.input,
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
   overflowY: 'auto',
-  fontFamily:
-    '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Segoe UI", Roboto, sans-serif',
+  fontFamily: fontStack,
 };
 
 const logoWrap = {
@@ -67,28 +74,31 @@ const logoImg = {
 };
 
 const card = {
-  background: CARD,
-  borderRadius: 16,
-  padding: '28px 22px 32px',
+  background: `linear-gradient(180deg, rgba(31, 30, 27, 0.98) 0%, ${CARD} 100%)`,
+  borderRadius: radius.card,
+  padding: '30px 24px 34px',
   border: `0.5px solid ${BORDER}`,
+  boxShadow: shadow.cardRaised,
 };
 
 const title = {
-  fontSize: 28,
-  fontWeight: 800,
+  fontSize: 26,
+  fontWeight: 700,
   color: MAIN,
   margin: '0 0 12px',
-  letterSpacing: '-0.02em',
+  letterSpacing: '-0.025em',
   textAlign: 'center',
-  lineHeight: 1.25,
+  lineHeight: 1.3,
 };
 
 const subtitle = {
-  fontSize: 13,
+  fontSize: 14,
   color: SUB,
   margin: '0 0 28px',
-  lineHeight: 1.6,
+  lineHeight: 1.62,
   textAlign: 'center',
+  letterSpacing: '0.015em',
+  fontWeight: 400,
 };
 
 const label = {
@@ -141,17 +151,18 @@ const birthWrapDay = {
 const selectWrap = {
   position: 'relative',
   width: '100%',
-  background: CARD,
+  background: `linear-gradient(180deg, rgba(24, 23, 21, 0.95) 0%, ${CARD} 100%)`,
   border: `0.5px solid ${BORDER}`,
-  borderRadius: 16,
-  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+  borderRadius: radius.input,
+  transition: `border-color 0.28s ${ease.soft}, box-shadow 0.28s ${ease.soft}`,
   overflow: 'visible',
   boxSizing: 'border-box',
+  boxShadow: shadow.cardInner,
 };
 
 const selectWrapFocus = {
-  borderColor: GOLD,
-  boxShadow: `0 0 0 1px ${GOLD}`,
+  borderColor: `rgba(203, 164, 78, 0.48)`,
+  boxShadow: `0 0 0 3px ${FOCUS_RING}, ${shadow.cardInner}`,
 };
 
 const selectBase = {
@@ -161,7 +172,7 @@ const selectBase = {
   padding: '14px 34px 14px 10px',
   fontSize: 15,
   lineHeight: 1.35,
-  borderRadius: 16,
+  borderRadius: radius.input,
   border: 'none',
   background: 'transparent',
   color: MAIN,
@@ -192,71 +203,42 @@ const chevron = {
 const btn = {
   width: '100%',
   marginTop: 8,
-  minHeight: 48,
+  minHeight: 50,
   padding: '17px 16px',
   fontSize: 16,
-  fontWeight: 700,
+  fontWeight: 600,
   color: BTN_TEXT,
-  background: GOLD,
+  background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_MUTED} 118%)`,
   border: 'none',
-  borderRadius: 16,
+  borderRadius: radius.card,
   cursor: 'pointer',
-  letterSpacing: '-0.01em',
+  letterSpacing: '-0.008em',
+  boxShadow: shadow.primaryBtn,
+  transition: `transform 0.22s ${ease.soft}, filter 0.22s ${ease.soft}`,
 };
 
-const adOverlayRoot = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: 240,
-  background: 'rgba(15, 15, 15, 0.9)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 24,
-  boxSizing: 'border-box',
-};
+const adOverlayRoot = { ...adOverlay.root, zIndex: 240 };
 
-const adOverlayCard = {
-  width: '100%',
-  maxWidth: 340,
-  background: CARD,
-  border: `0.5px solid ${BORDER}`,
-  borderRadius: 16,
-  padding: '28px 22px',
-  textAlign: 'center',
-};
+const adOverlayCard = { ...adOverlay.card(340), padding: '26px 22px 28px' };
 
 const adOverlayTitle = {
   margin: 0,
   color: MAIN,
-  fontSize: 16,
-  fontWeight: 700,
-  lineHeight: 1.55,
+  fontSize: 15,
+  fontWeight: 600,
+  lineHeight: 1.45,
+  letterSpacing: '-0.018em',
 };
 
-const adOverlaySub = {
-  margin: '10px 0 0',
-  color: SUB,
-  fontSize: 13,
-  lineHeight: 1.5,
-};
-
-const adProgressTrack = {
-  width: '100%',
-  height: 8,
-  marginTop: 18,
-  background: '#141414',
-  border: `0.5px solid ${BORDER}`,
-  borderRadius: 999,
-  overflow: 'hidden',
-};
+const adProgressTrack = adOverlay.track;
 
 const retryHintCard = {
   marginTop: 12,
-  background: '#141414',
+  background: SURFACE,
   border: `0.5px solid ${BORDER}`,
-  borderRadius: 14,
-  padding: '14px 12px',
+  borderRadius: radius.sm,
+  padding: '16px 14px',
+  boxShadow: shadow.cardRest,
 };
 
 const retryHintText = {
@@ -269,14 +251,15 @@ const retryHintText = {
 const retryBtn = {
   marginTop: 10,
   width: '100%',
-  minHeight: 40,
-  borderRadius: 12,
-  border: `0.5px solid ${GOLD}`,
-  background: '#1a1a1a',
+  minHeight: 42,
+  borderRadius: radius.sm,
+  border: `0.5px solid ${color.goldTint22}`,
+  background: CARD,
   color: GOLD,
   fontSize: 14,
-  fontWeight: 700,
+  fontWeight: 600,
   cursor: 'pointer',
+  transition: `background 0.22s ${ease.soft}, border-color 0.22s ${ease.soft}`,
 };
 
 const BIRTH_WRAP = {
@@ -319,19 +302,20 @@ export default function InputScreen({
   submitError = '',
 }) {
   const [focusKey, setFocusKey] = useState(null);
-  const [adProgress, setAdProgress] = useState(12);
+  const [adProgress, setAdProgress] = useState(10);
 
   useEffect(() => {
     if (!submitBusy) {
-      setAdProgress(12);
+      setAdProgress(10);
       return undefined;
     }
     const timer = setInterval(() => {
       setAdProgress((prev) => {
-        const next = prev + 7;
-        return next >= 96 ? 22 : next;
+        if (prev >= 95) return 95;
+        const next = prev + 6;
+        return Math.min(95, next);
       });
-    }, 280);
+    }, 260);
     return () => clearInterval(timer);
   }, [submitBusy]);
 
@@ -350,20 +334,11 @@ export default function InputScreen({
   return (
     <div style={shell}>
       {submitBusy && (
-        <div style={adOverlayRoot} role="dialog" aria-live="polite" aria-label="광고 준비 안내">
+        <div style={adOverlayRoot} role="dialog" aria-live="polite" aria-label="행운번호를 받기 위해 광고를 불러오는 중">
           <div style={adOverlayCard}>
-            <p style={adOverlayTitle}>광고 시청 후 결과를 보여드릴게요!</p>
-            <p style={adOverlaySub}>광고를 불러오는 중이에요. 잠시만 기다려 주세요.</p>
+            <p style={adOverlayTitle}>행운번호를 받기 위해 광고를 불러오고 있어요</p>
             <div style={adProgressTrack}>
-              <div
-                style={{
-                  width: `${adProgress}%`,
-                  height: '100%',
-                  background: `linear-gradient(90deg, ${GOLD}, #e8cc7f)`,
-                  borderRadius: 999,
-                  transition: 'width 240ms ease',
-                }}
-              />
+              <div style={{ ...adOverlay.fill, width: `${adProgress}%` }} />
             </div>
           </div>
         </div>

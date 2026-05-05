@@ -1,53 +1,74 @@
 import { TossAds } from '@apps-in-toss/web-framework';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { tossPadding, tossViewportShell } from '../constants/tossLayout.js';
 import { AD_GROUP_IDS } from '../constants/adIds.js';
+import {
+  adOverlay,
+  backgrounds,
+  color,
+  ease,
+  fontStack,
+  radius,
+  shadow,
+} from '../constants/uiTheme.js';
 import { playFullScreenAd } from '../services/adService.js';
 import { formatKoreanDateLabel } from '../utils/sajuCalculator.js';
 import { shareFortuneContent } from '../utils/shareFortune.js';
 
-const BG = '#0f0f0f';
-const CARD = '#1a1a1a';
-const BORDER = '#2a2a2a';
-const MAIN = '#f0ead6';
-const SUB = '#888888';
-const HINT = '#555555';
-const GOLD = '#c9a84c';
-const BTN_TEXT = '#0f0f0f';
+const {
+  card: CARD,
+  border: BORDER,
+  main: MAIN,
+  sub: SUB,
+  hint: HINT,
+  gold: GOLD,
+  goldMuted: GOLD_MUTED,
+  btnText: BTN_TEXT,
+  surface: SURFACE,
+} = color;
 const shell = {
-  minHeight: '100%',
-  background: BG,
+  flex: 1,
+  width: '100%',
+  minHeight: '100dvh',
+  background: backgrounds.shell,
   ...tossViewportShell,
   ...tossPadding.result,
-  fontFamily:
-    '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Segoe UI", Roboto, sans-serif',
+  fontFamily: fontStack,
+  boxSizing: 'border-box',
+  overflowY: 'auto',
+  WebkitOverflowScrolling: 'touch',
 };
 
 const dateHeader = {
-  fontSize: 13,
+  fontSize: 12,
   fontWeight: 500,
   color: SUB,
   textAlign: 'center',
-  margin: '0 0 20px',
-  letterSpacing: '0.02em',
+  margin: '0 0 18px',
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  fontVariantNumeric: 'tabular-nums',
 };
 
 const pageTitle = {
-  fontSize: 22,
-  fontWeight: 800,
+  fontSize: 20,
+  fontWeight: 700,
   color: MAIN,
-  margin: '0 0 22px',
+  margin: '0 0 20px',
   textAlign: 'center',
-  letterSpacing: '-0.02em',
+  letterSpacing: '-0.022em',
+  lineHeight: 1.32,
 };
 
 const numberCard = {
-  borderRadius: 16,
-  padding: '28px 20px 24px',
+  borderRadius: radius.card,
+  padding: '30px 22px 26px',
   textAlign: 'center',
-  background: CARD,
+  background: `linear-gradient(180deg, rgba(31, 30, 27, 0.98) 0%, ${CARD} 100%)`,
   border: `0.5px solid ${BORDER}`,
   marginBottom: 22,
+  boxShadow: shadow.cardRaised,
 };
 
 const groupText = {
@@ -55,14 +76,14 @@ const groupText = {
   fontWeight: 600,
   color: GOLD,
   marginBottom: 10,
-  letterSpacing: '0.08em',
+  letterSpacing: '0.1em',
 };
 
 const digitsText = {
   fontSize: 38,
-  fontWeight: 800,
+  fontWeight: 700,
   color: MAIN,
-  letterSpacing: '0.2em',
+  letterSpacing: '0.18em',
   margin: 0,
   fontVariantNumeric: 'tabular-nums',
 };
@@ -70,39 +91,42 @@ const digitsText = {
 const drawBadge = {
   display: 'inline-block',
   marginTop: 18,
-  padding: '8px 14px',
+  padding: '9px 16px',
   fontSize: 11,
-  fontWeight: 600,
+  fontWeight: 500,
   color: SUB,
-  background: '#141414',
-  borderRadius: 16,
+  background: SURFACE,
+  borderRadius: radius.card,
   border: `0.5px solid ${BORDER}`,
-  letterSpacing: '0.04em',
+  letterSpacing: '0.055em',
+  boxShadow: shadow.cardInner,
 };
 
 const blockCard = {
-  background: CARD,
-  borderRadius: 16,
-  padding: '22px 20px 24px',
+  background: `linear-gradient(180deg, rgba(28, 27, 24, 0.92) 0%, ${CARD} 100%)`,
+  borderRadius: radius.card,
+  padding: '24px 20px 26px',
   border: `0.5px solid ${BORDER}`,
   marginBottom: 22,
+  boxShadow: shadow.cardRest,
 };
-
 
 const sectionTitleGold = {
   fontSize: 13,
-  fontWeight: 700,
+  fontWeight: 600,
   color: GOLD,
   margin: '0 0 14px',
-  letterSpacing: '0.06em',
+  letterSpacing: '0.065em',
   textAlign: 'center',
 };
 
 const fortuneLine = {
   fontSize: 15,
   color: SUB,
-  lineHeight: 1.7,
+  lineHeight: 1.74,
   margin: '0 0 14px',
+  letterSpacing: '0.018em',
+  fontWeight: 400,
 };
 
 const twinGrid = {
@@ -113,17 +137,18 @@ const twinGrid = {
 };
 
 const twinCard = {
-  background: CARD,
-  borderRadius: 16,
-  padding: '18px 14px',
+  background: `linear-gradient(180deg, rgba(26, 25, 22, 0.95) 0%, ${CARD} 100%)`,
+  borderRadius: radius.card,
+  padding: '20px 16px',
   border: `0.5px solid ${BORDER}`,
   minHeight: 88,
   boxSizing: 'border-box',
+  boxShadow: shadow.cardInner,
 };
 
 const twinLabel = {
   fontSize: 11,
-  fontWeight: 700,
+  fontWeight: 600,
   color: HINT,
   margin: '0 0 10px',
   letterSpacing: '0.08em',
@@ -132,7 +157,7 @@ const twinLabel = {
 
 const twinValue = {
   fontSize: 16,
-  fontWeight: 700,
+  fontWeight: 600,
   color: MAIN,
   margin: 0,
   lineHeight: 1.45,
@@ -154,11 +179,12 @@ const yongshinStrong = {
 const detailOuter = {
   marginTop: 0,
   marginBottom: 28,
-  borderRadius: 16,
-  border: `1px dashed ${BORDER}`,
-  background: '#141414',
+  borderRadius: radius.card,
+  border: `1px dashed rgba(255, 245, 230, 0.11)`,
+  background: `linear-gradient(180deg, ${SURFACE} 0%, rgba(21, 20, 18, 0.98) 100%)`,
   overflow: 'hidden',
   position: 'relative',
+  boxShadow: `${shadow.cardInner}, inset 0 6px 32px rgba(0, 0, 0, 0.06)`,
 };
 
 const unlockBtn = {
@@ -166,41 +192,49 @@ const unlockBtn = {
   minHeight: 48,
   padding: '15px 16px',
   fontSize: 14,
-  fontWeight: 700,
+  fontWeight: 600,
   color: BTN_TEXT,
-  background: GOLD,
+  background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_MUTED} 118%)`,
   border: 'none',
-  borderRadius: 16,
+  borderRadius: radius.card,
   cursor: 'pointer',
-  letterSpacing: '-0.01em',
+  letterSpacing: '-0.008em',
+  boxShadow: shadow.primaryBtn,
+  transition: `transform 0.2s ${ease.soft}, opacity 0.2s ${ease.soft}`,
 };
 
+/** 세컨더리: 메인 CTA(다른 번호)보다 가벼운 골드 톤 */
 const shareBtn = {
   width: '100%',
-  minHeight: 48,
-  padding: '16px 16px',
-  fontSize: 15,
-  fontWeight: 700,
+  minHeight: 46,
+  padding: '14px 16px',
+  fontSize: 14,
+  fontWeight: 500,
   color: GOLD,
-  background: CARD,
-  border: `0.5px solid ${GOLD}`,
-  borderRadius: 16,
+  background: color.goldTint08,
+  border: `0.5px solid ${color.goldTint22}`,
+  borderRadius: radius.card,
   cursor: 'pointer',
-  marginTop: 8,
+  marginTop: 10,
+  letterSpacing: '0.02em',
+  transition: `border-color 0.22s ${ease.soft}, background 0.22s ${ease.soft}`,
 };
 
 const redrawBtn = {
   width: '100%',
-  minHeight: 48,
+  minHeight: 50,
   padding: '16px 16px',
   fontSize: 15,
-  fontWeight: 700,
+  fontWeight: 600,
   color: BTN_TEXT,
-  background: GOLD,
+  background: `linear-gradient(180deg, ${GOLD} 0%, ${GOLD_MUTED} 118%)`,
   border: 'none',
-  borderRadius: 16,
+  borderRadius: radius.card,
   cursor: 'pointer',
-  marginTop: 14,
+  marginTop: 0,
+  letterSpacing: '-0.008em',
+  boxShadow: shadow.primaryBtn,
+  transition: `transform 0.2s ${ease.soft}`,
 };
 
 const footnote = {
@@ -208,7 +242,9 @@ const footnote = {
   color: HINT,
   textAlign: 'center',
   margin: '32px 0 0',
-  lineHeight: 1.6,
+  lineHeight: 1.62,
+  letterSpacing: '0.025em',
+  fontWeight: 400,
 };
 
 const textLinkBtn = {
@@ -220,59 +256,37 @@ const textLinkBtn = {
   border: 'none',
   background: 'none',
   fontSize: 13,
-  fontWeight: 600,
-  color: HINT,
+  fontWeight: 500,
+  color: SUB,
   cursor: 'pointer',
   textDecoration: 'underline',
-  textUnderlineOffset: 4,
+  textDecorationColor: `${color.goldTint42}`,
+  textUnderlineOffset: 5,
 };
 
-const againOverlayRoot = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: 200,
-  background: 'rgba(15, 15, 15, 0.94)',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: 32,
-  boxSizing: 'border-box',
-};
-
-const againOverlayCard = {
-  background: CARD,
-  borderRadius: 16,
-  padding: '36px 28px',
-  maxWidth: 320,
-  width: '100%',
-  textAlign: 'center',
-  border: `0.5px solid ${BORDER}`,
-};
-
+const againOverlayRoot = adOverlay.root;
+/** 스크롤·transform 조상과 무관하게 뷰포트에 붙이기 */
+const againOverlayRootPortal = { ...adOverlay.root, zIndex: 10_000 };
+const againOverlayCard = { ...adOverlay.card(320), padding: '26px 22px 28px' };
+const AD_MODAL_HEADLINE = '결과를 열기 위한 마지막 단계예요';
 const againOverlayTitle = {
   margin: 0,
-  fontSize: 16,
-  fontWeight: 700,
+  fontSize: 15,
+  fontWeight: 600,
   color: MAIN,
-  lineHeight: 1.55,
+  lineHeight: 1.45,
+  letterSpacing: '-0.018em',
 };
 
 const againOverlaySub = {
-  marginTop: 14,
-  fontSize: 14,
+  marginTop: 8,
+  fontSize: 13,
   color: SUB,
+  lineHeight: 1.48,
+  fontWeight: 400,
 };
 
-const againOverlayTrack = {
-  width: '100%',
-  height: 8,
-  marginTop: 18,
-  background: '#141414',
-  border: `0.5px solid ${BORDER}`,
-  borderRadius: 999,
-  overflow: 'hidden',
-};
+const againOverlayTrack = adOverlay.track;
 
 const inlineAdWrap = {
   marginBottom: 22,
@@ -288,12 +302,12 @@ function DetailBody({ detail }) {
   const tagWrap = { display: 'flex', gap: 8, flexWrap: 'wrap' };
   const tag = {
     padding: '8px 14px',
-    borderRadius: 16,
-    background: '#141414',
-    border: `0.5px solid ${GOLD}`,
+    borderRadius: radius.sm,
+    background: SURFACE,
+    border: `0.5px solid ${color.goldTint22}`,
     color: GOLD,
     fontSize: 13,
-    fontWeight: 700,
+    fontWeight: 600,
   };
 
   return (
@@ -352,7 +366,8 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
   const [adBusy, setAdBusy] = useState(null);
   const [bannerAvailable, setBannerAvailable] = useState(false);
   const [bannerRendered, setBannerRendered] = useState(false);
-  const [adProgress, setAdProgress] = useState(12);
+  const [adProgress, setAdProgress] = useState(10);
+  const scrollRootRef = useRef(null);
   const bannerListRef = useRef(null);
   const bannerRetryIntervalRef = useRef(null);
   const bannerRenderedRef = useRef(false);
@@ -364,15 +379,15 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
 
   useEffect(() => {
     if (adBusy === null) {
-      setAdProgress(12);
+      setAdProgress(10);
       return undefined;
     }
     const timer = setInterval(() => {
       setAdProgress((prev) => {
-        const next = prev + 7;
-        return next >= 96 ? 24 : next;
+        if (prev >= 95) return 95;
+        return Math.min(95, prev + 6);
       });
-    }, 280);
+    }, 260);
     return () => clearInterval(timer);
   }, [adBusy]);
 
@@ -524,10 +539,30 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
     };
   }, [today]);
 
+  const scrollResultToTop = useCallback(() => {
+    const el = scrollRootRef.current;
+    if (el && typeof el.scrollTo === 'function') {
+      el.scrollTo({ top: 0, behavior: 'auto' });
+    }
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    if (adBusy === null) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [adBusy]);
+
   const startDetailUnlock = useCallback(() => {
     if (detailUnlocked || adBusy !== null) return;
 
-    setAdBusy({ kind: 'detail', label: '광고를 불러오는 중입니다…' });
+    scrollResultToTop();
+    setAdBusy({ kind: 'detail' });
     void (async () => {
       const result = await playFullScreenAd({ adGroupId: AD_GROUP_IDS.rewarded });
       if (result.status !== 'shown') {
@@ -539,12 +574,13 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
       setDetailUnlocked(true);
       setAdBusy(null);
     })();
-  }, [detailUnlocked, adBusy]);
+  }, [detailUnlocked, adBusy, scrollResultToTop]);
 
   const startNextNumberFlow = useCallback(() => {
     if (adBusy !== null) return;
 
-    setAdBusy({ kind: 'next', label: '광고 시청 후 다음 번호를 보여드릴게요' });
+    scrollResultToTop();
+    setAdBusy({ kind: 'next' });
     void (async () => {
       const result = await playFullScreenAd({ adGroupId: AD_GROUP_IDS.rewarded });
       if (result.status !== 'shown') {
@@ -562,7 +598,7 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
       }
       setAdBusy(null);
     })();
-  }, [adBusy, onShowNextCandidate]);
+  }, [adBusy, onShowNextCandidate, scrollResultToTop]);
 
   const handleShare = useCallback(async () => {
     const url =
@@ -582,10 +618,10 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
     maxHeight: detailUnlocked ? 2000 : 160,
     overflow: 'hidden',
     transition:
-      'max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1), filter 0.55s ease, opacity 0.5s ease, transform 0.55s ease',
-    filter: lockedBlur ? 'blur(8px)' : 'blur(0)',
-    opacity: lockedBlur ? 0.45 : 1,
-    transform: lockedBlur ? 'scale(0.99)' : 'scale(1)',
+      'max-height 0.72s cubic-bezier(0.33, 1, 0.68, 1), filter 0.52s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.48s cubic-bezier(0.4, 0, 0.2, 1), transform 0.52s cubic-bezier(0.4, 0, 0.2, 1)',
+    filter: lockedBlur ? 'blur(6px) saturate(0.92)' : 'blur(0)',
+    opacity: lockedBlur ? 0.5 : 1,
+    transform: lockedBlur ? 'scale(0.993)' : 'scale(1)',
     pointerEvents: lockedBlur ? 'none' : 'auto',
     userSelect: lockedBlur ? 'none' : 'auto',
   };
@@ -601,35 +637,36 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
     alignItems: 'stretch',
     justifyContent: 'center',
     padding: 18,
-    background: 'linear-gradient(180deg, rgba(15,15,15,0.5) 0%, rgba(15,15,15,0.88) 40%, rgba(15,15,15,0.95) 100%)',
+    background:
+      'linear-gradient(180deg, rgba(18, 17, 15, 0.35) 0%, rgba(16, 15, 13, 0.82) 44%, rgba(14, 13, 12, 0.94) 100%)',
   };
 
-  const detailUnlockLabel = adBusy?.kind === 'detail' ? '광고 준비 중입니다!' : '광고 보고 상세 운세 확인';
-  const adOverlayTitleText =
-    adBusy?.kind === 'detail' ? '광고 시청 후 상세 운세를 열어드릴게요' : '광고 시청 후 다음 추천 번호를 볼 수 있어요';
-  const adOverlaySubText = adBusy?.label || '광고를 불러오는 중입니다…';
+  const detailUnlockLabel = adBusy?.kind === 'detail' ? '준비 중…' : '오늘의 재물운 상세 보기 🍀';
+  /** 상세·다음 번호 공통 헤드라인만 사용, 부제는 다음 번호일 때만(중복 문구 방지) */
+  const adModalSubline = adBusy?.kind === 'next' ? '새 번호를 준비 중이에요.' : null;
 
-  return (
-    <div style={shell} className="app-result-scroll">
-      {adBusy !== null && (
-        <div style={againOverlayRoot} role="dialog" aria-live="polite" aria-label="광고 시청 안내">
-          <div style={againOverlayCard}>
-            <p style={againOverlayTitle}>{adOverlayTitleText}</p>
-            <p style={againOverlaySub}>{adOverlaySubText}</p>
-            <div style={againOverlayTrack}>
-              <div
-                style={{
-                  width: `${adProgress}%`,
-                  height: '100%',
-                  background: `linear-gradient(90deg, ${GOLD}, #e8cc7f)`,
-                  borderRadius: 999,
-                  transition: 'width 240ms ease',
-                }}
-              />
-            </div>
+  const adBusyModal =
+    adBusy !== null && typeof document !== 'undefined' ? (
+      <div
+        style={againOverlayRootPortal}
+        role="dialog"
+        aria-modal="true"
+        aria-live="polite"
+        aria-label={AD_MODAL_HEADLINE}
+      >
+        <div style={againOverlayCard}>
+          <p style={againOverlayTitle}>{AD_MODAL_HEADLINE}</p>
+          {adModalSubline ? <p style={againOverlaySub}>{adModalSubline}</p> : null}
+          <div style={againOverlayTrack}>
+            <div style={{ ...adOverlay.fill, width: `${adProgress}%` }} />
           </div>
         </div>
-      )}
+      </div>
+    ) : null;
+
+  return (
+    <div ref={scrollRootRef} style={shell} className="app-result-scroll">
+      {adBusyModal ? createPortal(adBusyModal, document.body) : null}
 
       <p style={dateHeader}>{formatKoreanDateLabel(today)}</p>
 
@@ -655,7 +692,7 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
       {source === 'ai' && analysisReason ? (
         <div style={{ ...blockCard, marginBottom: 22 }}>
           <div style={sectionTitleGold}>번호가 나온 이유</div>
-          <p style={{ ...fortuneLine, marginBottom: 0 }}>{analysisReason}</p>
+          <p style={{ ...fortuneLine, marginBottom: 0, whiteSpace: 'pre-line' }}>{analysisReason}</p>
         </div>
       ) : null}
 
@@ -713,10 +750,6 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
         )}
       </div>
 
-      <button type="button" style={shareBtn} onClick={() => void handleShare()}>
-        번호 공유하기
-      </button>
-
       {candidateCount > 0 ? (
         <button
           type="button"
@@ -727,6 +760,10 @@ export default function ResultScreen({ data, onShowNextCandidate, onGoToInput })
           다른 번호 보기
         </button>
       ) : null}
+
+      <button type="button" style={shareBtn} onClick={() => void handleShare()}>
+        번호 공유하기
+      </button>
 
       {typeof onGoToInput === 'function' ? (
         <button type="button" style={textLinkBtn} onClick={onGoToInput}>

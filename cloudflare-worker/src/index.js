@@ -1,5 +1,6 @@
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
+const DEFAULT_MAX_OUTPUT_TOKENS = 3072;
 const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
 const FALLBACK_MODELS = [
   'claude-haiku-4-5-20251001',
@@ -52,7 +53,7 @@ function extractText(data) {
     .trim();
 }
 
-async function runAnthropic({ apiKey, userPrompt, model }) {
+async function runAnthropic({ apiKey, userPrompt, model, maxTokens = DEFAULT_MAX_OUTPUT_TOKENS }) {
   const response = await fetch(ANTHROPIC_URL, {
     method: 'POST',
     headers: {
@@ -62,9 +63,8 @@ async function runAnthropic({ apiKey, userPrompt, model }) {
     },
     body: JSON.stringify({
       model: model || DEFAULT_MODEL,
-      max_tokens: 8192,
-      system:
-        '사용자 메시지가 JSON을 요구하면, 마크다운·코드펜스(```)·앞뒤 설명 없이 JSON 객체 텍스트만 출력한다. 다른 서술은 쓰지 않는다.',
+      max_tokens: maxTokens,
+      system: '요청이 JSON이면 마크다운·코드펜스·앞뒤 말 없이 JSON 객체만 출력.',
       messages: [{ role: 'user', content: userPrompt }],
     }),
   });
@@ -94,14 +94,14 @@ function normalizeModelList(model) {
   return [...new Set(list)];
 }
 
-async function runAnthropicWithFallback({ apiKey, userPrompt, model }) {
+async function runAnthropicWithFallback({ apiKey, userPrompt, model, maxTokens }) {
   const models = normalizeModelList(model);
   let lastError = null;
 
   for (let i = 0; i < models.length; i += 1) {
     const m = models[i];
     try {
-      return await runAnthropic({ apiKey, userPrompt, model: m });
+      return await runAnthropic({ apiKey, userPrompt, model: m, maxTokens });
     } catch (e) {
       lastError = e;
       const status = Number.isInteger(e?.httpStatus) ? e.httpStatus : 0;
@@ -150,10 +150,13 @@ export default {
         );
       }
 
+      const maxTokens =
+        Number.parseInt(String(env.ANTHROPIC_MAX_TOKENS ?? '').trim(), 10) || DEFAULT_MAX_OUTPUT_TOKENS;
       const { resultText, model } = await runAnthropicWithFallback({
         apiKey,
         userPrompt,
         model: String(env.ANTHROPIC_MODEL || '').trim(),
+        maxTokens,
       });
       return Response.json({ resultText, model }, { status: 200, headers: cors });
     } catch (e) {

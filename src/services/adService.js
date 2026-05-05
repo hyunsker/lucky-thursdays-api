@@ -2,6 +2,14 @@ import { loadFullScreenAd, showFullScreenAd } from '@apps-in-toss/web-framework'
 
 const DEFAULT_TIMEOUT_MS = 120_000;
 
+function safeIsSupported(checkFn) {
+  try {
+    return typeof checkFn === 'function' && checkFn();
+  } catch {
+    return false;
+  }
+}
+
 function pausePlayableMedia() {
   if (typeof document === 'undefined') return () => {};
 
@@ -26,10 +34,8 @@ export async function playFullScreenAd({ adGroupId, timeoutMs = DEFAULT_TIMEOUT_
   if (!adGroupId) return { status: 'error', reason: 'missing_ad_group_id' };
 
   const supported =
-    typeof loadFullScreenAd?.isSupported === 'function' &&
-    loadFullScreenAd.isSupported() &&
-    typeof showFullScreenAd?.isSupported === 'function' &&
-    showFullScreenAd.isSupported();
+    safeIsSupported(loadFullScreenAd?.isSupported) &&
+    safeIsSupported(showFullScreenAd?.isSupported);
 
   if (!supported) return { status: 'skipped', reason: 'not_supported' };
 
@@ -54,9 +60,10 @@ export async function playFullScreenAd({ adGroupId, timeoutMs = DEFAULT_TIMEOUT_
       finish({ status: 'error', reason: 'timeout' });
     }, timeoutMs);
 
-    cleanupLoad = loadFullScreenAd({
-      options: { adGroupId },
-      onEvent: (event) => {
+    try {
+      cleanupLoad = loadFullScreenAd({
+        options: { adGroupId },
+        onEvent: (event) => {
         if (event?.type !== 'loaded') return;
 
         restoreAudio = pausePlayableMedia();
@@ -82,9 +89,12 @@ export async function playFullScreenAd({ adGroupId, timeoutMs = DEFAULT_TIMEOUT_
           },
         });
       },
-      onError: () => {
-        finish({ status: 'error', reason: 'load_error' });
-      },
-    });
+        onError: () => {
+          finish({ status: 'error', reason: 'load_error' });
+        },
+      });
+    } catch {
+      finish({ status: 'skipped', reason: 'not_supported_runtime' });
+    }
   });
 }

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { runClaudeUserPrompt } from './services/claudeApi.js';
 import { formatKoreanDateLabel, formatTodayKey } from './utils/sajuCalculator.js';
@@ -9,6 +9,11 @@ import LoadingScreen from './components/LoadingScreen.jsx';
 import { mergeFortuneBundleView, normalizeFortuneBundle } from './utils/displayResult.js';
 import { AD_GROUP_IDS } from './constants/adIds.js';
 import { playFullScreenAd } from './services/adService.js';
+import {
+  buildFortuneCacheKey,
+  readFortuneCache,
+  writeFortuneCache,
+} from './utils/fortuneSessionCache.js';
 
 /**
  * Claude 응답은 서버(/api/fortune) 경유 호출.
@@ -35,7 +40,7 @@ function extractJsonText(text) {
 
 function userFacingFortuneError(e) {
   const msg = e instanceof Error ? e.message : String(e);
-  const retryMessage = '현재 요청이 많아 다시 시도해 주세요.';
+  const retryMessage = '잠시 후 다시 시도해 주세요.';
   if (/CONFIG_MISSING_API_URL/i.test(msg)) {
     return retryMessage;
   }
@@ -63,6 +68,20 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const MIN_LOADING_MS = 1400;
+
+function validatedBundleFromStorage(cacheKey) {
+  const bundle = readFortuneCache(cacheKey);
+  if (!bundle) return null;
+  try {
+    mergeFortuneBundleView(bundle);
+    if (bundle?.shared?.source !== 'ai') return null;
+    return bundle;
+  } catch {
+    return null;
+  }
+}
+
 const initialBirth = () => {
   const d = new Date();
   return { year: d.getFullYear() - 25, month: 1, day: 1 };
@@ -85,6 +104,24 @@ export default function App() {
     return { year, month, day: safeDay };
   }, [birth]);
 
+  const todayIso = formatTodayKey();
+  const fortuneCacheKey = useMemo(
+    () => buildFortuneCacheKey({ todayIso, ...validatedBirth, hour }),
+    [todayIso, validatedBirth.year, validatedBirth.month, validatedBirth.day, hour],
+  );
+
+  useEffect(() => {
+    if (step !== 'result' || !fortuneBundle) return;
+    try {
+      mergeFortuneBundleView(fortuneBundle);
+      if (fortuneBundle.shared?.source === 'ai') {
+        writeFortuneCache(fortuneCacheKey, fortuneBundle);
+      }
+    } catch {
+      /* invalid bundle */
+    }
+  }, [step, fortuneBundle, fortuneCacheKey]);
+
   const displayData = useMemo(() => {
     if (!fortuneBundle) return null;
     try {
@@ -97,17 +134,17 @@ export default function App() {
   const fetchFortuneBatch = useCallback(
     async (batchIndex) => {
       const { year, month, day } = validatedBirth;
-      const todayIso = formatTodayKey();
+      const todayKey = formatTodayKey();
       const batchKey = `BATCH-${batchIndex}`;
-      const seedKey = `${todayIso}|${year}|${month}|${day}|${hour}|${batchKey}`;
-      const todayKorean = formatKoreanDateLabel(todayIso);
+      const seedKey = `${todayKey}|${year}|${month}|${day}|${hour}|${batchKey}`;
+      const todayKorean = formatKoreanDateLabel(todayKey);
       const hourLabel = getHourLabel(hour);
       const promptText = buildFortunePrompt({
         year,
         month,
         day,
         hourLabel,
-        todayIso,
+        todayIso: todayKey,
         todayKorean,
         batchKey,
       });
@@ -126,9 +163,9 @@ export default function App() {
         }
       }
       if (!parsed || typeof parsed !== 'object') throw new Error('INVALID_JSON');
-      parsed.todayIso = parsed.todayIso || todayIso;
+      parsed.todayIso = parsed.todayIso || todayKey;
 
-      const bundle = normalizeFortuneBundle(parsed, todayIso, seedKey);
+      const bundle = normalizeFortuneBundle(parsed, todayKey, seedKey);
       if (bundle.shared.source !== 'ai') throw new Error('NON_AI_RESULT_BLOCKED');
       return bundle;
     },
@@ -167,29 +204,37 @@ export default function App() {
     setSubmitError('');
     setSubmitBusy(true);
     void (async () => {
-      const bundlePromise = fetchFortuneBatch(1)
-        .then((bundle) => ({ ok: true, bundle }))
-        .catch((error) => ({ ok: false, error }));
+      const key = fortuneCacheKey;
+      const cached = validatedBundleFromStorage(key);
+
+      const bundlePromise = cached
+        ? Promise.resolve({ ok: true, bundle: cached, fromCache: true })
+        : fetchFortuneBatch(1)
+            .then((bundle) => {
+              writeFortuneCache(key, bundle);
+              return { ok: true, bundle, fromCache: false };
+            })
+            .catch((error) => ({ ok: false, error }));
+
       try {
         const adResult = await playFullScreenAd({ adGroupId: AD_GROUP_IDS.interstitial });
-        if (adResult.status !== 'shown') {
-          setSubmitError('현재 요청이 많아 다시 시도해 주세요.');
-          return;
+        if (adResult.status === 'error') {
+          console.warn('[Ad] 인터스티셜 실패, API는 계속 진행합니다:', adResult.reason);
         }
 
         flushSync(() => {
           setFortuneBundle(null);
           setLoadingDone(false);
-          setLoadingStartPct(68);
+          setLoadingStartPct(cached ? 42 : 68);
           setStep('loading');
         });
 
         const bundled = await bundlePromise;
         if (!bundled.ok) throw bundled.error;
-        const bundle = bundled.bundle;
+        const { bundle } = bundled;
         setFortuneBundle(bundle);
         setLoadingDone(true);
-        await sleep(220);
+        await sleep(bundled.fromCache ? MIN_LOADING_MS : 220);
         setStep('result');
       } catch (e) {
         console.warn('[Fortune] AI 요청 실패:', e);
@@ -223,7 +268,7 @@ export default function App() {
       return { ...prev, candidates: merged, activeIndex: prev.activeIndex + 1 };
     });
     if (!expanded) {
-      window.alert('현재 요청이 많아 다시 시도해 주세요.');
+      window.alert('잠시 후 다시 시도해 주세요.');
     }
   }, [buildLocalSimilarCandidates]);
 

@@ -1,0 +1,11 @@
+이 내용을 프로젝트 루트에 `.cursorignore` 파일로 저장하면,
+Cursor가 node_modules·dist·ait 등을 인덱싱/(@)참조에서 제외해 **대화에 쓰는 토큰**을 줄이는 데 도움이 됩니다.
+
+# Cursor 컨텍스트 절약
+node_modules/
+dist/
+**/*.ait
+**/*.zip
+**/*.map
+package-lock.json
+**/.DS_Store

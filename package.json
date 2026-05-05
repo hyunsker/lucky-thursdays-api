@@ -4,14 +4,16 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
-    "dev:web": "vite --host",
+    "dev": "vite",
+    "dev:web": "vite",
     "dev:proxy": "node server/fortune-proxy.mjs",
     "dev:full": "concurrently --kill-others-on-fail \"npm run dev:proxy\" \"npm run dev:web\"",
     "lan": "node scripts/show-lan-url.mjs",
     "dev:granite": "granite dev",
     "build": "vite build",
     "build:ait": "ait build",
+    "store-screens": "node scripts/capture-store-screens.mjs",
+    "store-screens:fallback": "python3 scripts/render-store-screens-fallback.py",
     "worker:secret": "npm run secret --prefix ./cloudflare-worker",
     "worker:deploy": "npm run deploy --prefix ./cloudflare-worker",
     "preview": "vite preview --host"
